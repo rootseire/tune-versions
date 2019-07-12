@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+  <script src='https://api.mapbox.com/mapbox.js/v2.2.3/mapbox.js'></script>
+  <link href='https://api.mapbox.com/mapbox.js/v2.2.3/mapbox.css' rel='stylesheet' />
+  
+  <style>
+    body { margin:0;position:fixed;top:0;right:0;bottom:0;left:0; }
+    #map {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+      .tooltip{
+    position: relative;
+    }
+      #tooltip-container {
+  position: fixed;
+  background-color: #fff;
+  color: #000;
+  padding: 10px;
+  border: 1px solid;
+  display: none;
+}
+.tooltip_key {
+  font-weight: bold;
+}
+
+.tooltip_value {
+  margin-left: 20px;
+  float: right;
+}  
+    div.tooltip {   
+ 	position: absolute;         
+	text-align: center;           
+	width: auto;                  
+	height: 100px;                 
+	padding: 20px;             
+	font: 12px sans-serif;        
+	background: white;   
+	border: 0px;      
+	border-radius: 8px; 
+    opacity:0;
+	/*pointer-events: none;         */
+}
+a{z-index:333;}
+div.tooltip{z-index:333;height:120px;}
+/*.popup{width:150px;height:100px;padding:20px;}*/
+  </style>
+</head>
+
+<body>
+     
+    
+  <div id="map"></div>
+  <script>
+    L.mapbox.accessToken = 'pk.eyJ1IjoiZW5qYWxvdCIsImEiOiJjaWhtdmxhNTIwb25zdHBsejk0NGdhODJhIn0.2-F2hS_oTZenAWc0BMf_uw'
+    
+    //Setup our Leaflet map using Mapbox.js
+    var map = L.mapbox.map('map', 'mapbox.pencil', {maxZoom: 18, minZoom: 2})
+    .setView([44.681987,-58.744311], 4);
+    
+    function project(latlng){
+      var array = [+latlng.lat, +latlng.lon]
+      var point = map.latLngToLayerPoint(L.latLng(latlng));
+
+      return point;
+    }
+    
+    // Setup our svg layer that we can manipulate with d3
+    var svg = d3.select(map.getPanes().overlayPane)
+      .append("svg");
+      
+         // Append Div for tooltip to SVG
+ div = d3.select("#map")
+		    .append("div")   
+    		.attr("class", "tooltip")
+          
+      
+    var g = svg.append("g").attr("class", "leaflet-zoom-hide");
+    
+    d3.csv("dots.csv", function(err, data) {
+      //console.log("data:", data)
+ var container2 = svg.selectAll("div");
+         // container2.attr("class", "leaflet-map-pane");
+        
+        
+      var dots = g.selectAll("circle").data(data)
+      var container = svg.selectAll("div.tooltip");
+      dots.enter()
+        .append("circle")
+        
+        .on("mouseover", function(data) {  
+          
+    	div.transition()        
+      	   div.transition()
+            .duration(500)    
+            .style("opacity", 1);
+        div.transition()
+            .duration(200)    
+            .style("opacity", 1); 
+            var pop_text = data.popup_text;
+            var sound = data.popup_link;
+         // console.log(sound)
+          container.style("opacity", 1);
+            //console.log(position);
+div.html('<div class="popup"><p>'+pop_text+'</p><audio controls><source src='+sound+'' + ' type="audio/mpeg">' +
+'Your browser does not support the audio element.</audio></div>')
+          
+          
+          
+        //div.html('<a href="https://www.google.com/'+position+'"' 
+        //     + '>' 
+        //     + position + '</a>' )
+          .style("opacity", 1)
+           .style("left", (d3.event.pageX) + "px")     
+           .style("top", (d3.event.pageY - 28) + "px");  
+          
+	})   .on("mousemove", function() {
+         
+            })
+        .on("mouseout", function(){
+            
+            
+   
+       var finder = d3.transform(d3.select('.leaflet-map-pane').style("transform")),
+    x = finder.translate[0],
+    y = finder.translate[1];
+          console.log(x);
+          console.log(y);
+          
+          var tooltips2 = d3.selectAll(".tooltip");
+           tooltips2.style("transform", "translate(" + x + "," + y +")");
+           //div.selectAll("transform", "translate(" + -topLeft.x + "," + -topLeft.y + ")");  
+           
+        });
+        
+
+      
+      function update() {
+        // We need to reposition our SVG and our containing group when the map
+        // repositions via zoom or pan
+        // https://github.com/zetter/voronoi-maps/blob/master/lib/voronoi_map.js
+         
+          
+        var bounds = map.getBounds();
+        var topLeft = map.latLngToLayerPoint(bounds.getNorthWest())
+        var bottomRight = map.latLngToLayerPoint(bounds.getSouthEast())
+        //console.log(bounds, topLeft, bottomRight)
+        svg.style("width", map.getSize().x + "px")
+          .style("height", map.getSize().y + "px")
+          .style("left", topLeft.x + "px")
+          .style("top", topLeft.y + "px");
+        
+
+         
+          
+          //return tooltips2.style("top", (pageY-10)+"px").style("left",(pageX+10)+"px");
+          //tooltips2.style("top", (d3.event.pageY-10)+"px")
+          //    .style("left",(d3.event.pageX+10)+"px");
+          
+        g.attr("transform", "translate(" + -topLeft.x + "," + -topLeft.y + ")");
+     
+          
+      
+        
+        //div.attr("transform", "translate(" + -topLeft.x + "," + -topLeft.y + ")");
+        //div.selectAll(".popup").attr("transform", "translate(" + -topLeft.x + "," + -topLeft.y + ")");
+        
+       
+
+        dots.attr({
+          cx: function(d) { return project(d).x },
+          cy: function(d) { return project(d).y },
+          r: 5
+        })
+      
+      }
+      update();
+      
+      map.on("viewreset", function() {
+        update();
+      })
+      map.on("move", update)
+
+    })
+  </script>
+</body>
